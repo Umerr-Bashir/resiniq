@@ -1,0 +1,41 @@
+A real industrial deployment would require:
+- Historical batch data.
+- Actual endpoint and quality specifications.
+- Validation against experienced operators' decisions.
+- Comparison with existing process-control methods.
+- Integration with their existing infrastructure.
+
+
+
+
+1. Remaining Reaction Time
+Prediction
+
+yusmpgroup.com
+
+
+- Estimated remaining time: 2.4 hours
+- Prediction range: 1.9–2.9 hours
+- Expected endpoint time
+
+  2. Final Viscosity & Off-Spec Risk
+  Quality forecasting
+- Predicted final viscosity
+- Target viscosity specification
+- Probability of out-of-spec result
+- Quality risk indicator
+
+  3. Process Anomaly & Sensor Drift Detection
+  Anomaly detection
+- Unusual process behaviour
+- Sensor readings deviating from expected patterns
+- Possible sensor drift
+- Anomaly severity and explanation
+
+How we'll implement them
+Capability	Proposed technique
+Remaining reaction time	Regression / time-to-event prediction
+Final viscosity	Regression
+Off-spec risk	Classification / probability estimation
+Process anomalies	Isolation Forest or other anomaly detection
+Sensor drift	Statistical drift detection

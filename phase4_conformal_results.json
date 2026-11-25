@@ -1,0 +1,11 @@
+{
+  "model_name": "RandomForest",
+  "alpha": 0.1,
+  "radius": 0.7836762310551639,
+  "target_coverage": 0.9,
+  "test_coverage": 0.883419689119171,
+  "average_interval_width": 1.5673524621103283,
+  "test_mae": 0.3856235887806181,
+  "test_rmse": 0.6608202051833154,
+  "test_r2": 0.9091904909122254
+}
