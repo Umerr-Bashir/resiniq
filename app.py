@@ -46,6 +46,7 @@ st.markdown(
         background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
     }
 
+    [data-testid="stSidebar"],
     [data-testid="stSidebar"] * {
         color: #e5e7eb !important;
     }
@@ -53,16 +54,22 @@ st.markdown(
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4,
+    [data-testid="stSidebar"] h5,
+    [data-testid="stSidebar"] h6,
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] li,
-    [data-testid="stSidebar"] div {
+    [data-testid="stSidebar"] div,
+    [data-testid="stSidebar"] small,
+    [data-testid="stSidebar"] a,
+    [data-testid="stSidebar"] button {
         color: #e5e7eb !important;
     }
 
     [data-testid="stSidebar"] .stCaption,
-    [data-testid="stSidebar"] small {
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
         color: #cbd5e1 !important;
     }
 
