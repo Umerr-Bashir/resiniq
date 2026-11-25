@@ -261,8 +261,8 @@ st.markdown(
     /* Fork button with dark border */
     button:has(span:contains("Fork")),
     [data-testid="stButton"] button:has(span:contains("Fork")) {
-        border: 1px solid #0f172a !important;
-        color: #0f172a !important;
+        border: 1px solid #00000 !important;
+        color: #00000 !important;
         background: transparent !important;
     }
 
@@ -407,8 +407,8 @@ st.title("Resin Batch Intelligence")
 st.markdown(
     """
     <div class="hero-shell">
-      <div class="eyebrow">Synthetic resin operations demo</div>
-      <div class="hero-title">AI batch review for reaction time, viscosity, and quality risk</div>
+      <div class="eyebrow">Synthetic resin operations</div>
+      <div class="hero-title">Batch review for reaction time, viscosity, and quality risk</div>
       <div class="hero-copy">
         This dashboard presents an experimental industrial AI workflow for an in-progress resin batch.
         It uses synthetic data honestly, keeps uncertainty visible, and frames each prediction as a decision aid rather than a production alarm.
