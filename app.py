@@ -24,6 +24,24 @@ st.markdown(
             linear-gradient(180deg, #f5f7fb 0%, #eef2f7 48%, #e9eef4 100%);
     }
 
+    [data-testid="stAppViewContainer"] h1,
+    [data-testid="stAppViewContainer"] h2,
+    [data-testid="stAppViewContainer"] h3,
+    [data-testid="stAppViewContainer"] p,
+    [data-testid="stAppViewContainer"] label,
+    [data-testid="stAppViewContainer"] span,
+    [data-testid="stAppViewContainer"] li,
+    [data-testid="stAppViewContainer"] div {
+        color: #0f172a !important;
+    }
+
+    [data-testid="stAppViewContainer"] .stCaptionContainer,
+    [data-testid="stAppViewContainer"] .stMarkdown,
+    [data-testid="stAppViewContainer"] .stMarkdown p,
+    [data-testid="stAppViewContainer"] .stMarkdown strong {
+        color: #0f172a !important;
+    }
+
     .block-container {
         padding-top: 2rem;
         padding-bottom: 2.4rem;
