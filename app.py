@@ -205,6 +205,27 @@ st.markdown(
         outline: 2px solid #38bdf8;
         outline-offset: 2px;
     }
+    div[data-testid="stFormSubmitButton"] > button {
+        background: #b91c1c;
+        color: #ffffff;
+        border: 1px solid #b91c1c;
+        box-shadow: 0 10px 24px rgba(185, 28, 28, 0.18);
+        transition: all 0.2s ease;
+    }
+
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background: #991b1b;
+        color: #ffffff;
+        border-color: #991b1b;
+        box-shadow: 0 14px 28px rgba(185, 28, 28, 0.22);
+        filter: none;
+    }
+
+    div[data-testid="stFormSubmitButton"] > button:active {
+        background: #7f1d1d;
+        color: #ffffff;
+        border-color: #7f1d1d;
+    }
 </style>
     """,
     unsafe_allow_html=True,
