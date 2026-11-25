@@ -3,9 +3,13 @@ from pathlib import Path
 
 import altair as alt
 import joblib
+import numpy as np
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+from sklearn.metrics import mean_absolute_error, mean_squared_error, precision_score, recall_score, roc_auc_score
+
+from split_data import load_dataset, make_splits
 
 st.set_page_config(
     page_title="Resin Batch Intelligence",
@@ -175,6 +179,18 @@ st.markdown(
         color: #64748b;
         font-size: 0.85rem;
     }
+    .input-label {
+        margin: 0.05rem 0 0.35rem 0;
+        color: #0f172a;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+    div[data-testid="stNumberInput"] label {
+        color: #0f172a !important;
+        font-weight: 600 !important;
+        opacity: 1 !important;
+    }
     div[data-testid="stButton"] > button,
     div[data-testid="stFormSubmitButton"] > button {
         background: #0f172a;
@@ -332,6 +348,61 @@ def get_browser_now() -> datetime:
     return datetime.now().astimezone()
 
 
+FINAL_VISC_SPEC_LOWER = 1600.0
+FINAL_VISC_SPEC_UPPER = 3200.0
+FINAL_VISC_SPEC_MARGIN = (FINAL_VISC_SPEC_UPPER - FINAL_VISC_SPEC_LOWER) * 0.15
+
+
+FEATURE_LABELS = {
+    "elapsed": "Elapsed time (h)",
+    "av_init": "Initial acid value (mg KOH/g)",
+    "temp_set": "Set temperature (°F)",
+    "catalyst": "Catalyst dose (fraction)",
+    "glycerol_ratio": "Glycerol ratio (ratio)",
+    "purity_meas": "Purity, lab (fraction)",
+    "lab_av": "Acid value, lab (mg KOH/g)",
+    "lab_av_prev": "Previous acid value, lab (mg KOH/g)",
+    "lab_visc": "Viscosity, lab (cP)",
+    "torque": "Torque (synthetic units)",
+    "torque_slope": "Torque slope (synthetic units/h)",
+    "temp_last": "Last temperature (°F)",
+    "temp_mean": "Mean temperature (°F)",
+    "water_cum": "Water cumulative (synthetic units)",
+    "water_rate": "Water rate (synthetic units/h)",
+}
+
+
+def feature_display_label(feature: str) -> str:
+    return FEATURE_LABELS.get(feature, feature.replace("_", " ").title())
+
+
+def classify_viscosity(predicted_value: float) -> tuple[str, str]:
+    if predicted_value < FINAL_VISC_SPEC_LOWER:
+        return (
+            "below lower limit",
+            f"Below the lower specification limit of {FINAL_VISC_SPEC_LOWER:,.0f} cP.",
+        )
+    if predicted_value <= FINAL_VISC_SPEC_LOWER + FINAL_VISC_SPEC_MARGIN:
+        return (
+            "near lower limit",
+            f"Near the lower specification limit of {FINAL_VISC_SPEC_LOWER:,.0f} cP.",
+        )
+    if predicted_value >= FINAL_VISC_SPEC_UPPER:
+        return (
+            "above upper limit",
+            f"Above the upper specification limit of {FINAL_VISC_SPEC_UPPER:,.0f} cP.",
+        )
+    if predicted_value >= FINAL_VISC_SPEC_UPPER - FINAL_VISC_SPEC_MARGIN:
+        return (
+            "near upper limit",
+            f"Near the upper specification limit of {FINAL_VISC_SPEC_UPPER:,.0f} cP.",
+        )
+    return (
+        "within spec",
+        f"Within the {FINAL_VISC_SPEC_LOWER:,.0f} to {FINAL_VISC_SPEC_UPPER:,.0f} cP specification band.",
+    )
+
+
 @st.cache_resource
 def load_time_artifact():
     bundle_path = Path("resin_bundle.joblib")
@@ -399,6 +470,43 @@ def load_quality_artifact():
         }
 
     return None
+
+
+@st.cache_data(show_spinner=False)
+def load_quality_evaluation():
+    if not quality_artifact:
+        return None
+
+    df = load_dataset()
+    splits = make_splits(df)
+    train_df = pd.concat([splits["train_df"], splits["val_df"]], axis=0).sort_index()
+    test_df = splits["test_df"]
+
+    X_test = test_df[time_features]
+    y_final_test = test_df["final_visc"]
+    y_off_test = test_df["off_spec"]
+
+    final_model = quality_artifact["final_model"]
+    risk_model = quality_artifact["risk_model"]
+
+    final_pred = final_model.predict(X_test)
+    risk_prob = risk_model.predict_proba(X_test)[:, 1]
+    risk_alarm = (risk_prob >= 0.5).astype(int)
+    baseline_pred = np.full(len(y_final_test), float(train_df["final_visc"].mean()))
+
+    return {
+        "train_rows": int(len(train_df)),
+        "test_rows": int(len(test_df)),
+        "train_batches": int(train_df["batch_id"].nunique()),
+        "test_batches": int(test_df["batch_id"].nunique()),
+        "final_mae": float(mean_absolute_error(y_final_test, final_pred)),
+        "final_rmse": float(np.sqrt(mean_squared_error(y_final_test, final_pred))),
+        "baseline_mae": float(mean_absolute_error(y_final_test, baseline_pred)),
+        "risk_auc": float(roc_auc_score(y_off_test, risk_prob)),
+        "risk_precision": float(precision_score(y_off_test, risk_alarm, zero_division=0)),
+        "risk_recall": float(recall_score(y_off_test, risk_alarm, zero_division=0)),
+        "alarm_threshold": 0.5,
+    }
 
 
 time_artifact = load_time_artifact()
@@ -503,11 +611,13 @@ with st.form("batch_prediction_form"):
     for i, feature in enumerate(features):
         column = col1 if i % 3 == 0 else col2 if i % 3 == 1 else col3
         with column:
+            st.markdown(f'<div class="input-label">{feature_display_label(feature)}</div>', unsafe_allow_html=True)
             values[feature] = st.number_input(
-                feature.replace("_", " ").title(),
+                feature_display_label(feature),
                 value=0.0,
                 format="%.4f",
                 key=f"input_{feature}",
+                label_visibility="collapsed",
             )
 
     submitted = st.form_submit_button(
@@ -525,12 +635,12 @@ def make_warning_text(values_map):
             continue
         if value < limits["min"] or value > limits["max"]:
             warnings.append(
-                f"{feature.replace('_', ' ').title()} is outside the training range "
+                f"{feature_display_label(feature)} is outside the training range "
                 f"({limits['min']:.4f} to {limits['max']:.4f})."
             )
         elif value < limits["p05"] or value > limits["p95"]:
             warnings.append(
-                f"{feature.replace('_', ' ').title()} is near the edge of the training distribution."
+                f"{feature_display_label(feature)} is near the edge of the training distribution."
             )
     return warnings
 
@@ -542,31 +652,46 @@ def render_viscosity_chart(predicted_value: float):
     if not q:
         return
 
-    bands = pd.DataFrame(
+    status, _ = classify_viscosity(predicted_value)
+    marker_color = "#0f766e" if status == "within spec" else "#b45309" if "near" in status else "#b91c1c"
+    chart_min = min(q["min"], FINAL_VISC_SPEC_LOWER) - 100
+    chart_max = max(q["max"], FINAL_VISC_SPEC_UPPER) + 100
+
+    observed_range = pd.DataFrame([{"x": q["min"], "x2": q["max"], "y": 0}])
+    spec_band = pd.DataFrame([{"x": FINAL_VISC_SPEC_LOWER, "x2": FINAL_VISC_SPEC_UPPER, "y": 0}])
+    limit_rules = pd.DataFrame(
         [
-            {"band": "p05-p95", "x": q["p05"], "x2": q["p95"], "y": 0},
-            {"band": "p25-p75", "x": q["p25"], "x2": q["p75"], "y": 0},
+            {"value": FINAL_VISC_SPEC_LOWER, "label": "Lower limit", "y": 0},
+            {"value": FINAL_VISC_SPEC_UPPER, "label": "Upper limit", "y": 0},
         ]
     )
-    rule = pd.DataFrame([{"value": predicted_value, "y": 0}])
+    marker = pd.DataFrame([{"value": predicted_value, "y": 0}])
 
-    chart = (
-        alt.Chart(bands)
-        .mark_bar(size=28)
-        .encode(
-            x=alt.X("x:Q", title="Final viscosity (cP)"),
-            x2="x2:Q",
-            y=alt.Y("y:O", axis=None),
-            color=alt.Color(
-                "band:N",
-                scale=alt.Scale(domain=["p05-p95", "p25-p75"], range=["#DCEBFF", "#8CB9FF"]),
-                legend=None,
-            ),
-        )
-        .properties(height=70)
+    base = alt.Chart(observed_range).mark_bar(size=24, cornerRadius=8, color="#E5E7EB").encode(
+        x=alt.X("x:Q", title="Final viscosity (cP)", scale=alt.Scale(domain=[chart_min, chart_max])),
+        x2="x2:Q",
+        y=alt.Y("y:O", axis=None),
     )
-    chart = chart + alt.Chart(rule).mark_rule(color="#B00020", size=3).encode(x="value:Q", y="y:O")
+    spec = alt.Chart(spec_band).mark_bar(size=24, cornerRadius=8, color="#8FD6B3").encode(
+        x="x:Q",
+        x2="x2:Q",
+        y=alt.Y("y:O", axis=None),
+    )
+    limits = alt.Chart(limit_rules).mark_rule(color="#64748b", strokeDash=[6, 4], strokeWidth=1.5).encode(
+        x="value:Q",
+        y="y:O",
+        tooltip=[alt.Tooltip("label:N", title="Limit"), alt.Tooltip("value:Q", title="cP", format=",.0f")],
+    )
+    pred = alt.Chart(marker).mark_rule(color=marker_color, strokeWidth=4).encode(x="value:Q", y="y:O")
+    pred_point = alt.Chart(marker).mark_point(color=marker_color, filled=True, size=160, shape="diamond").encode(
+        x="value:Q",
+        y="y:O",
+        tooltip=[alt.Tooltip("value:Q", title="Prediction", format=",.0f")],
+    )
+
+    chart = (base + spec + limits + pred + pred_point).properties(height=92).configure_view(strokeOpacity=0).configure_axis(grid=False)
     st.altair_chart(chart, use_container_width=True)
+    st.caption("Grey bar = observed training range, green bar = 1,600 to 3,200 cP spec band, diamond = model prediction.")
 
 
 def render_metric_card(label: str, value: str, subtext: str, accent: str = "#0f172a"):
@@ -655,39 +780,36 @@ if submitted:
                 "The model predicts zero or negative remaining time. The batch may have reached its endpoint, but this requires confirmation."
             )
 
+        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
         st.divider()
         st.subheader("2. Final Viscosity and Off-Spec Risk")
 
         if quality_artifact:
+            evaluation = load_quality_evaluation()
             final_model = quality_artifact["final_model"]
             risk_model = quality_artifact["risk_model"]
-            final_quantiles = quality_artifact["final_quantiles"]
             importances = quality_artifact["feature_importances"]
 
             final_pred = float(final_model.predict(X)[0])
             risk_prob = float(risk_model.predict_proba(X)[0][1])
             risk_label = "High" if risk_prob >= 0.60 else "Elevated" if risk_prob >= 0.25 else "Low"
 
-            q75 = final_quantiles.get("p75", final_pred)
-            q95 = final_quantiles.get("p95", final_pred)
-
             left, right = st.columns(2)
             with left:
                 render_metric_card(
                     "Predicted Final Viscosity",
                     f"{final_pred:,.0f} cP",
-                    "Regression forecast for the synthetic endpoint quality.",
+                    f"Forecast against the {FINAL_VISC_SPEC_LOWER:,.0f} to {FINAL_VISC_SPEC_UPPER:,.0f} cP specification band.",
                     accent="#7c3aed",
                 )
                 render_viscosity_chart(final_pred)
-                st.caption(
-                    f"Training distribution reference: 75th percentile {q75:,.0f} cP, 95th percentile {q95:,.0f} cP."
-                )
+                viscosity_state, viscosity_message = classify_viscosity(final_pred)
+                st.caption(f"{viscosity_message} Prediction status: {viscosity_state}.")
             with right:
                 render_metric_card(
                     "Off-Spec Risk",
                     risk_label,
-                    "Classifier output mapped to an industrial risk call.",
+                    "Classifier output mapped to an alarm probability.",
                     accent="#dc2626" if risk_label != "Low" else "#0f766e",
                 )
                 st.progress(min(max(risk_prob, 0.0), 1.0))
@@ -703,20 +825,25 @@ if submitted:
                         use_container_width=True,
                     )
 
-            if risk_label in ("Elevated", "High") or final_pred >= q95:
+            if viscosity_state in ("below lower limit", "above upper limit"):
                 insight = (
-                    "The current batch is progressing toward its expected endpoint. "
-                    "However, the predicted final viscosity is approaching the upper specification limit. "
-                    "Review the current reaction conditions and monitor subsequent laboratory measurements."
+                    f"The current batch is progressing toward its expected endpoint. {viscosity_message} "
+                    "That is an out-of-spec forecast, so review the current reaction conditions and monitor the next lab sample closely."
+                )
+            elif viscosity_state in ("near lower limit", "near upper limit"):
+                insight = (
+                    f"The current batch is progressing toward its expected endpoint. {viscosity_message} "
+                    "The forecast is still within spec, but it is close enough to the boundary that the next lab check matters."
                 )
             elif risk_prob >= 0.35:
                 insight = (
-                    "The batch appears to be progressing normally, but the quality model sees a moderate off-spec signal. "
-                    "Continue monitoring temperature, torque, and the next lab update."
+                    f"The current batch is progressing toward its expected endpoint. {viscosity_message} "
+                    "The viscosity forecast is acceptable, but the quality model still sees a moderate off-spec signal. Continue monitoring temperature, torque, and the next lab update."
                 )
             else:
                 insight = (
-                    "The batch is on track and the predicted final viscosity remains comfortably within the observed synthetic operating band."
+                    f"The current batch is progressing toward its expected endpoint. {viscosity_message} "
+                    "The batch looks on track from both the viscosity forecast and the off-spec probability."
                 )
 
             st.info("Process insight")
@@ -730,22 +857,20 @@ if submitted:
         )
 
         with st.expander("Model details", expanded=False):
-            st.write(f"Time model: {time_model_name}")
-            if time_alpha is not None:
-                st.write(f"Time interval nominal coverage: {int((1 - time_alpha) * 100)}%")
-            if "model_mae_test" in time_metadata:
-                st.write(f"Time holdout MAE: {time_metadata['model_mae_test']:.3f} hours")
-            if "model_r2_test" in time_metadata:
-                st.write(f"Time holdout R2: {time_metadata['model_r2_test']:.3f}")
-            st.write(
-                f"Batch-disjoint split: {time_metadata.get('split_source', 'unknown')}"
-            )
-            if quality_artifact:
-                st.write(f"Final viscosity holdout MAE: {quality_artifact['final_metrics'].get('mae', 0):.1f} cP")
-                st.write(f"Off-spec holdout ROC AUC: {quality_artifact['risk_metrics'].get('roc_auc', 0):.3f}")
-                st.write(
-                    f"Quality split: {quality_artifact['metadata'].get('split_source', 'unknown')}"
+            if evaluation:
+                st.markdown(
+                    f"""
+                    - **Data set:** {evaluation['train_rows'] + evaluation['test_rows']:,} synthetic rows across {evaluation['train_batches'] + evaluation['test_batches']:,} batches.
+                    - **How it was generated:** the app is built from synthetic batch snapshots, where each row captures the current process state plus the downstream labels for remaining time, final viscosity, and off-spec risk.
+                    - **Split discipline:** whole batches stayed together during training and testing, so the held-out batches were never seen during fitting.
+                    - **Regression result:** final viscosity MAE {evaluation['final_mae']:.1f} cP versus a naive mean baseline of {evaluation['baseline_mae']:.1f} cP, with RMSE {evaluation['final_rmse']:.1f} cP.
+                    - **Classification result:** ROC AUC {evaluation['risk_auc']:.3f}. At the {evaluation['alarm_threshold']:.2f} alarm threshold, precision is {evaluation['risk_precision']:.3f} and recall is {evaluation['risk_recall']:.3f}.
+                    - **What AUC means:** 0.819 means the classifier ranks an off-spec case above an in-spec case about 82% of the time; it does not describe how noisy one alarm threshold will be.
+                    - **Limitations:** synthetic-only data, no plant validation, and threshold performance is sensitive to class balance and the chosen alarm cutoff.
+                    """
                 )
+            else:
+                st.write("Evaluation metrics are unavailable.")
 
     except Exception as e:
         st.error(f"Prediction failed: {e}")
