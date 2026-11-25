@@ -175,6 +175,36 @@ st.markdown(
         color: #64748b;
         font-size: 0.85rem;
     }
+    div[data-testid="stButton"] > button,
+    div[data-testid="stFormSubmitButton"] > button {
+        background: #0f172a;
+        color: #f8fafc;
+        border: 1px solid #0f172a;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+        transition: all 0.2s ease;
+    }
+
+    div[data-testid="stButton"] > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background: #111827;
+        color: #f8fafc;
+        border-color: #111827;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+        filter: none;
+    }
+
+    div[data-testid="stButton"] > button:active,
+    div[data-testid="stFormSubmitButton"] > button:active {
+        background: #0b1220;
+        color: #f8fafc;
+        border-color: #0b1220;
+    }
+
+    div[data-testid="stButton"] > button:focus-visible,
+    div[data-testid="stFormSubmitButton"] > button:focus-visible {
+        outline: 2px solid #38bdf8;
+        outline-offset: 2px;
+    }
 </style>
     """,
     unsafe_allow_html=True,
