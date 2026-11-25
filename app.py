@@ -270,6 +270,18 @@ st.markdown(
     [data-testid="stButton"] button {
         border-color: #0f172a;
     }
+    [data-testid="stHeader"] svg,
+    [data-testid="stHeader"] img,
+    [data-testid="stToolbar"] svg,
+    [data-testid="stToolbar"] img {
+        filter: brightness(0) saturate(100%) !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stHeader"] a,
+    [data-testid="stToolbar"] a {
+        color: #000000 !important;
+    }
 </style>
     """,
     unsafe_allow_html=True,
