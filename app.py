@@ -22,60 +22,24 @@ st.markdown(
             radial-gradient(circle at top left, rgba(55, 84, 255, 0.18), transparent 28%),
             radial-gradient(circle at 85% 10%, rgba(0, 164, 138, 0.14), transparent 22%),
             linear-gradient(180deg, #f5f7fb 0%, #eef2f7 48%, #e9eef4 100%);
+        color: #0f172a;
     }
 
-    [data-testid="stAppViewContainer"] h1,
-    [data-testid="stAppViewContainer"] h2,
-    [data-testid="stAppViewContainer"] h3,
-    [data-testid="stAppViewContainer"] p,
-    [data-testid="stAppViewContainer"] label,
-    [data-testid="stAppViewContainer"] span,
-    [data-testid="stAppViewContainer"] li,
-    [data-testid="stAppViewContainer"] div {
+    section[data-testid="stMain"],
+    section[data-testid="stMain"] * {
         color: #0f172a !important;
     }
 
-    [data-testid="stAppViewContainer"] .stCaptionContainer,
-    [data-testid="stAppViewContainer"] .stMarkdown,
-    [data-testid="stAppViewContainer"] .stMarkdown p,
-    [data-testid="stAppViewContainer"] .stMarkdown strong {
+    section[data-testid="stMain"] .stCaption,
+    section[data-testid="stMain"] [data-testid="stCaptionContainer"],
+    section[data-testid="stMain"] .stMarkdown,
+    section[data-testid="stMain"] .stMarkdown p,
+    section[data-testid="stMain"] .stMarkdown strong,
+    section[data-testid="stMain"] .stAlert,
+    section[data-testid="stMain"] .stAlert p,
+    section[data-testid="stMain"] .stAlert div,
+    section[data-testid="stMain"] .stAlert li {
         color: #0f172a !important;
-    }
-
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-    }
-
-    [data-testid="stSidebar"],
-    [data-testid="stSidebar"] * {
-        color: #e5e7eb !important;
-    }
-
-    [data-testid="stSidebar"] h1,
-    [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3,
-    [data-testid="stSidebar"] h4,
-    [data-testid="stSidebar"] h5,
-    [data-testid="stSidebar"] h6,
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] li,
-    [data-testid="stSidebar"] div,
-    [data-testid="stSidebar"] small,
-    [data-testid="stSidebar"] a,
-    [data-testid="stSidebar"] button {
-        color: #e5e7eb !important;
-    }
-
-    [data-testid="stSidebar"] .stCaption,
-    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
-        color: #cbd5e1 !important;
-    }
-
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2.4rem;
     }
 
     [data-testid="stSidebar"] {
@@ -83,8 +47,14 @@ st.markdown(
         color: #e5e7eb;
     }
 
+    [data-testid="stSidebar"],
     [data-testid="stSidebar"] * {
         color: #e5e7eb !important;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2.4rem;
     }
 
     .hero-shell {
@@ -205,7 +175,7 @@ st.markdown(
         color: #64748b;
         font-size: 0.85rem;
     }
-    </style>
+</style>
     """,
     unsafe_allow_html=True,
 )
