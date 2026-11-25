@@ -1,11 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import altair as alt
 import joblib
 import pandas as pd
 import streamlit as st
-
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="Resin Batch Intelligence",
@@ -276,6 +276,50 @@ st.markdown(
 )
 
 
+def sync_browser_clock():
+    st.html(
+        """
+        <script>
+        (function() {
+          const updateClock = () => {
+            const params = new URLSearchParams(window.location.search);
+            params.set("browser_now_ms", String(Date.now()));
+            params.set("browser_tz_offset_min", String(new Date().getTimezoneOffset()));
+            const nextUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+            window.history.replaceState({}, "", nextUrl);
+          };
+
+          updateClock();
+
+          if (!window.__browserClockSyncInstalled) {
+            window.__browserClockSyncInstalled = true;
+            const refresh = () => updateClock();
+            ["click", "change", "input", "keydown", "pointerdown"].forEach((eventName) => {
+              document.addEventListener(eventName, refresh, true);
+            });
+          }
+        })();
+        </script>
+        """,
+        unsafe_allow_javascript=True,
+    )
+
+
+def get_browser_now() -> datetime:
+    browser_now_ms = st.query_params.get("browser_now_ms")
+    browser_tz_offset_min = st.query_params.get("browser_tz_offset_min")
+
+    if browser_now_ms is not None and browser_tz_offset_min is not None:
+        try:
+            utc_now = datetime.fromtimestamp(float(browser_now_ms) / 1000.0, tz=timezone.utc)
+            browser_tz = timezone(timedelta(minutes=-int(float(browser_tz_offset_min))))
+            return utc_now.astimezone(browser_tz)
+        except (TypeError, ValueError):
+            pass
+
+    return datetime.now().astimezone()
+
+
 @st.cache_resource
 def load_time_artifact():
     bundle_path = Path("resin_bundle.joblib")
@@ -356,6 +400,8 @@ time_metadata = time_artifact["metadata"]
 time_model_name = time_artifact["model_name"]
 feature_ranges = time_metadata.get("feature_ranges", {})
 
+
+sync_browser_clock()
 
 st.title("Resin Batch Intelligence")
 st.markdown(
@@ -527,14 +573,15 @@ def render_metric_card(label: str, value: str, subtext: str, accent: str = "#0f1
 if submitted:
     X = pd.DataFrame([values], columns=features)
     warnings = make_warning_text(values)
+    browser_now = get_browser_now()
 
     try:
         remaining_pred = float(time_model.predict(X)[0])
         if time_radius is not None:
             remaining_lower = max(0.0, remaining_pred - time_radius)
             remaining_upper = max(0.0, remaining_pred + time_radius)
-            lower_completion = datetime.now() + timedelta(hours=remaining_lower)
-            upper_completion = datetime.now() + timedelta(hours=remaining_upper)
+            lower_completion = browser_now + timedelta(hours=remaining_lower)
+            upper_completion = browser_now + timedelta(hours=remaining_upper)
         else:
             remaining_lower = remaining_upper = None
             lower_completion = upper_completion = None
@@ -546,7 +593,7 @@ if submitted:
             st.warning("\n".join(warnings))
 
         if remaining_pred > 0:
-            completion_time = datetime.now() + timedelta(hours=remaining_pred)
+            completion_time = browser_now + timedelta(hours=remaining_pred)
             hours = int(remaining_pred)
             minutes = int((remaining_pred - hours) * 60)
 
