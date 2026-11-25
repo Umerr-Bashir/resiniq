@@ -856,7 +856,7 @@ if submitted:
             "Demonstration based on synthetic training data. Predictions have not been validated against actual industrial batch records."
         )
 
-        with st.expander("Model details", expanded=False):
+        with st.expander("Model details", expanded=True):
             if evaluation:
                 st.markdown(
                     f"""
