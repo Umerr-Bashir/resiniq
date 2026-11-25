@@ -209,7 +209,6 @@ st.markdown(
         background: #b91c1c;
         color: #ffffff;
         border: 1px solid #b91c1c;
-        box-shadow: 0 10px 24px rgba(185, 28, 28, 0.18);
         transition: all 0.2s ease;
     }
 
@@ -217,7 +216,6 @@ st.markdown(
         background: #991b1b;
         color: #ffffff;
         border-color: #991b1b;
-        box-shadow: 0 14px 28px rgba(185, 28, 28, 0.22);
         filter: none;
     }
 
@@ -225,6 +223,24 @@ st.markdown(
         background: #7f1d1d;
         color: #ffffff;
         border-color: #7f1d1d;
+    }
+    [data-testid="stHeader"] {
+        background: #f8fafc;
+        color: #0f172a;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    [data-testid="stHeader"] * {
+        color: #0f172a !important;
+    }
+
+    [data-testid="stToolbar"] {
+        background: #f8fafc;
+        color: #0f172a;
+    }
+
+    [data-testid="stToolbar"] * {
+        color: #0f172a !important;
     }
 </style>
     """,
