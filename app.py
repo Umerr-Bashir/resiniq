@@ -22,6 +22,7 @@ st.markdown(
             radial-gradient(circle at top left, rgba(55, 84, 255, 0.18), transparent 28%),
             radial-gradient(circle at 85% 10%, rgba(0, 164, 138, 0.14), transparent 22%),
             linear-gradient(180deg, #f5f7fb 0%, #eef2f7 48%, #e9eef4 100%);
+        color: #0f172a;
     }
 
     .block-container {
