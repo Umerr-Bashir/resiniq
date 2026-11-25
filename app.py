@@ -242,6 +242,34 @@ st.markdown(
     [data-testid="stToolbar"] * {
         color: #0f172a !important;
     }
+     /* Dark GitHub icon in the top bar */
+    [data-testid="stHeader"] svg,
+    [data-testid="stHeader"] img,
+    [data-testid="stToolbar"] svg,
+    [data-testid="stToolbar"] img {
+        filter: brightness(0) saturate(100%);
+    }
+
+    /* If the icon is inside a link/button, keep it dark there too */
+    [data-testid="stHeader"] a svg,
+    [data-testid="stHeader"] a img,
+    [data-testid="stToolbar"] a svg,
+    [data-testid="stToolbar"] a img {
+        filter: brightness(0) saturate(100%);
+    }
+
+    /* Fork button with dark border */
+    button:has(span:contains("Fork")),
+    [data-testid="stButton"] button:has(span:contains("Fork")) {
+        border: 1px solid #0f172a !important;
+        color: #0f172a !important;
+        background: transparent !important;
+    }
+
+    /* Fallback for buttons that don't support :has() well */
+    [data-testid="stButton"] button {
+        border-color: #0f172a;
+    }
 </style>
     """,
     unsafe_allow_html=True,
