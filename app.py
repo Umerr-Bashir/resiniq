@@ -42,6 +42,30 @@ st.markdown(
         color: #0f172a !important;
     }
 
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #e5e7eb !important;
+    }
+
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] li,
+    [data-testid="stSidebar"] div {
+        color: #e5e7eb !important;
+    }
+
+    [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] small {
+        color: #cbd5e1 !important;
+    }
+
     .block-container {
         padding-top: 2rem;
         padding-bottom: 2.4rem;
